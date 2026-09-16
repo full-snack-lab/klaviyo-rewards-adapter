@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "skills": {
+    "octocode-brainstorming": {
+      "source": "bgauryy/octocode",
+      "sourceType": "github",
+      "skillPath": "skills/octocode-brainstorming/SKILL.md",
+      "computedHash": "ea52db13a74970b82a6968e9bd7d230f6e1036229e28ed94329ba059d0c17c04"
+    },
+    "octocode-chrome-devtools": {
+      "source": "bgauryy/octocode",
+      "sourceType": "github",
+      "skillPath": "skills/octocode-chrome-devtools/SKILL.md",
+      "computedHash": "9e95dc437252aacd84d5ec931f6fb79d4fd56e77f95bb03906062678c79beada"
+    },
+    "octocode-documentation": {
+      "source": "bgauryy/octocode",
+      "sourceType": "github",
+      "skillPath": "skills/octocode-documentation/SKILL.md",
+      "computedHash": "b120d82f9dcdd6bb9678eebd0dfb17a6d20f9af66a11788d2f5b989672612272"
+    },
+    "octocode-graph-eval": {
+      "source": "bgauryy/octocode",
+      "sourceType": "github",
+      "skillPath": "skills/octocode-graph-eval/SKILL.md",
+      "computedHash": "a6e4794427a60d56113520c96890bc44072e301d78a96bd064aa81af8e3b500b"
+    },
+    "octocode-mannequin": {
+      "source": "bgauryy/octocode",
+      "sourceType": "github",
+      "skillPath": "skills/octocode-mannequin/SKILL.md",
+      "computedHash": "7f4da3abbf254dbc65aa23080d3ff104654f90c839c20fe77ddb4ba5e10e057e"
+    },
+    "octocode-prompt-optimizer": {
+      "source": "bgauryy/octocode",
+      "sourceType": "github",
+      "skillPath": "skills/octocode-prompt-optimizer/SKILL.md",
+      "computedHash": "2ba9413efabc487ce7bbc884d52ef48ace40ebccfe81001ba3f3eb099ef3340b"
+    },
+    "octocode-research": {
+      "source": "bgauryy/octocode",
+      "sourceType": "github",
+      "skillPath": "skills/octocode-research/SKILL.md",
+      "computedHash": "06a0dad8004d73a4501f62ee548fb2d5b7c2260168815095d8ebd93631c0f35b"
+    },
+    "octocode-rfc-generator": {
+      "source": "bgauryy/octocode",
+      "sourceType": "github",
+      "skillPath": "skills/octocode-rfc-generator/SKILL.md",
+      "computedHash": "dd910c2db4df461fa20f4939bd03591b3585d58ce58b43645dec9be9b81f0b8c"
+    },
+    "octocode-roast": {
+      "source": "bgauryy/octocode",
+      "sourceType": "github",
+      "skillPath": "skills/octocode-roast/SKILL.md",
+      "computedHash": "c86f83298fee9fa91cd73da1f5364d86f57adf86335adfa6bd478245cb078d7d"
+    },
+    "octocode-scraping": {
+      "source": "bgauryy/octocode",
+      "sourceType": "github",
+      "skillPath": "skills/octocode-scraping/SKILL.md",
+      "computedHash": "fc10a9e96a8402c90beb86d142de709f357993c4d3d026f775bac3dce28e7c9b"
+    },
+    "octocode-skills": {
+      "source": "bgauryy/octocode",
+      "sourceType": "github",
+      "skillPath": "skills/octocode-skills/SKILL.md",
+      "computedHash": "c53f2a3444f549d8cc0eaa91f1e808dd13cfb7a0e644892c935e1fe079b73235"
+    },
+    "octocode-subagent": {
+      "source": "bgauryy/octocode",
+      "sourceType": "github",
+      "skillPath": "skills/octocode-subagent/SKILL.md",
+      "computedHash": "9c8b7b3d3a6604fea7868f8ca6a71f45c9f84ff84b6eeb77f01d6d00194ceb71"
+    }
+  }
+}

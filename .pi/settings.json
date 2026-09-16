@@ -1,0 +1,27 @@
+{
+  "packages": [
+    {
+      "source": "https://github.com/segunadebayo/design-eng-skills",
+      "autoload": false,
+      "skills": [
+        "-skills/engineering-writing/SKILL.md",
+        "-skills/state-machine-design/SKILL.md",
+        "-skills/component-api-design/SKILL.md",
+        "+skills/changeset-writing/SKILL.md"
+      ]
+    },
+    {
+      "source": "https://github.com/slurpyb/skills",
+      "autoload": false,
+      "skills": [
+        "+plugins/writing-typescript/skills/bunup/SKILL.md",
+        "+plugins/writing-typescript/skills/designing-typescript-types/SKILL.md",
+        "+plugins/writing-typescript/skills/designing-typescript-objects/SKILL.md",
+        "+plugins/writing-typescript/skills/pino-console-logging/SKILL.md",
+        "+plugins/writing-typescript/skills/rx/SKILL.md",
+        "+plugins/writing-typescript/skills/typescript-utility-types/SKILL.md",
+        "+plugins/writing-typescript/skills/writing-typescript/SKILL.md"
+      ]
+    }
+  ]
+}

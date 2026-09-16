@@ -1,0 +1,42 @@
+{
+  "name": "full-snack-klaviyo-rewards",
+  "version": "0.1.0",
+  "description": "Typed Klaviyo OAuth client with token storage and Infisical secrets",
+  "license": "MIT",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "bunup",
+    "dev": "bunup --watch",
+    "test": "vitest run",
+    "type-check": "tsc --noEmit",
+    "check": "bun run type-check && bun run test && bun run build"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "bunup": "^0.16.32",
+    "msw": "^2.15.0",
+    "typescript": "^7.0.2",
+    "vitest": "^4.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "dependencies": {
+    "@infisical/sdk": "^5.0.2",
+    "klaviyo-api": "^23.0.0"
+  }
+}
