@@ -1,5 +1,11 @@
 # @fullsnacklab/klaviyo-rewards-adapter
 
+## 0.4.1
+
+### Patch Changes
+
+- 1b58fba: Fix npm releases to include the compiled JavaScript and TypeScript declaration files.
+
 ## 0.4.0
 
 ### Minor Changes
