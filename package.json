@@ -6,24 +6,9 @@
   "files": [
     "dist"
   ],
-  "scripts": {
-    "build": "bunup",
-    "dev": "bunup --watch",
-    "test": "vitest run",
-    "type-check": "tsc --noEmit",
-    "check": "bun run type-check && bun run test && bun run build"
-  },
-  "devDependencies": {
-    "@types/node": "^24.0.0",
-    "bunup": "^0.16.32",
-    "msw": "^2.15.0",
-    "typescript": "^6",
-    "vitest": "^4.0.0"
-  },
-  "engines": {
-    "node": ">=22"
-  },
   "type": "module",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "import": {
@@ -33,10 +18,35 @@
     },
     "./package.json": "./package.json"
   },
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "scripts": {
+    "build": "bunup",
+    "dev": "bunup --watch",
+    "test": "vitest run",
+    "type-check": "tsc --noEmit",
+    "check": "bun run --sequential type-check test",
+    "format": "oxfmt src/*.ts bunup.config.ts package.json",
+    "format:check": "bun run format -- --check",
+    "lint": "oxlint src/*.ts bunup.config.ts"
+  },
   "dependencies": {
     "@infisical/sdk": "^5.0.2",
     "klaviyo-api": "^23.0.0"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^3.0.3",
+    "@types/node": "^24.0.0",
+    "bunup": "^0.16.32",
+    "msw": "^2.15.0",
+    "oxfmt": "^0.68.0",
+    "oxlint": "^1.83.0",
+    "typescript": "^6",
+    "vitest": "^4.0.0"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }
