@@ -52,15 +52,14 @@ jobs:
       - name: Commit release version
         if: steps.pending.outputs.release == 'true'
         run: |
-          manifest=./packages/preset-core/package.json
+          manifest=./package.json
           package_name=$(node -p "require('$manifest').name")
           package_version=$(node -p "require('$manifest').version")
           release_tag="${package_name}@${package_version}"
           git config user.name 'github-actions[bot]'
           git config user.email \
             '41898282+github-actions[bot]@users.noreply.github.com'
-          git add --all .changeset packages/preset-core/CHANGELOG.md \
-            packages/preset-core/package.json bun.lock
+          git add --all .changeset CHANGELOG.md package.json bun.lock
           git commit -m "chore: release $release_tag"
           git push origin HEAD:main
       - name: Publish package
@@ -74,7 +73,7 @@ jobs:
           package_version=$(node -p "require('$manifest').version")
           release_tag="${package_name}@${package_version}"
           env -u NPM_TOKEN -u NODE_AUTH_TOKEN -u BUN_AUTH_TOKEN \
-            -u NPM_CONFIG_TOKEN npm publish ./packages/preset-core \
+            -u NPM_CONFIG_TOKEN npm publish . \
             --registry=https://registry.npmjs.org/ \
             --access=public \
             --tag=latest \
