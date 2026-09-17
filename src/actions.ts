@@ -13,7 +13,12 @@ import {
 } from "klaviyo-api";
 import type { EventCatalog, JsonObject, KlaviyoClient } from "./client.ts";
 
-/** OAuth scopes required when every built-in feature is enabled. */
+/**
+ * OAuth scopes required to use every feature exported by this package.
+ *
+ * Request only the individual scopes your application uses when the complete
+ * set is unnecessary.
+ */
 export const FEATURE_SCOPES = [
 	"campaigns:write",
 	"events:write",
@@ -24,7 +29,12 @@ export const FEATURE_SCOPES = [
 /** An OAuth scope used by a built-in feature. */
 export type FeatureScope = (typeof FEATURE_SCOPES)[number];
 
-/** Optional profile attributes included when an event identifies a profile. */
+/**
+ * Optional attributes sent when an event identifies a profile by email, phone
+ * number, or external ID.
+ *
+ * Undefined attributes are omitted from the Klaviyo request.
+ */
 export type EventProfileDetails = Readonly<{
 	firstName?: string;
 	lastName?: string;
@@ -33,7 +43,11 @@ export type EventProfileDetails = Readonly<{
 	properties?: JsonObject;
 }>;
 
-/** Selects exactly one identifier for an event's profile. */
+/**
+ * Selects exactly one identifier for an event's profile.
+ *
+ * A Klaviyo-generated profile ID cannot be combined with profile attributes.
+ */
 export type EventProfile =
 	| Readonly<{ identifier: "id"; id: string }>
 	| (Readonly<{ identifier: "email"; email: string }> & EventProfileDetails)
@@ -44,6 +58,8 @@ export type EventProfile =
 
 /**
  * Input for one typed Klaviyo event.
+ *
+ * Optional fields whose value is `undefined` are omitted from the request.
  *
  * @typeParam Name - A name from the client's event catalog.
  * @typeParam Properties - The property shape selected by `Name`.
@@ -62,13 +78,24 @@ export type EventInput<
 	backfill?: boolean;
 }>;
 
-/** Input for an event-backed transactional email flow. */
+/**
+ * Input for an event-backed transactional email flow.
+ *
+ * Backfilling is intentionally unavailable because transactional email events
+ * are always sent with `backfill: false`.
+ */
 export type TransactionalEmailInput<
 	Name extends string,
 	Properties extends JsonObject,
 > = Omit<EventInput<Name, Properties>, "backfill">;
 
-/** A generated profile resource with consumer-defined custom properties. */
+/**
+ * A generated profile resource whose custom `properties` use the
+ * consumer-defined shape.
+ *
+ * The generic describes the expected account schema; profile data is not
+ * validated at runtime.
+ */
 export type KlaviyoProfile<Properties extends JsonObject = JsonObject> = Omit<
 	ProfileResponsePluralConversationsObjectResourceExtended,
 	"attributes"
@@ -79,7 +106,10 @@ export type KlaviyoProfile<Properties extends JsonObject = JsonObject> = Omit<
 	> & { properties?: Properties | null };
 };
 
-/** Filtering, pagination, and sorting options for reading reviews. */
+/**
+ * Filtering, cursor pagination, and sorting options passed directly to the
+ * Klaviyo reviews API.
+ */
 export type PullReviewsInput = Readonly<{
 	filter?: string;
 	pageCursor?: string;
@@ -88,9 +118,13 @@ export type PullReviewsInput = Readonly<{
 }>;
 
 /**
- * Creates an event whose properties are selected by its event name.
+ * Creates an event whose property shape is selected by its event name.
  *
- * A successful response means Klaviyo accepted the event for asynchronous processing.
+ * @remarks A resolved promise means Klaviyo accepted the event for asynchronous
+ * processing; it does not guarantee that downstream flows completed.
+ *
+ * @throws TypeError if the event name or selected profile identifier is empty,
+ * or if the event name is 128 characters or longer.
  */
 export async function createEvent<
 	Events extends EventCatalog,
@@ -129,7 +163,12 @@ export async function createEvent<
 	await client.api(EventsApi).createEvent(query);
 }
 
-/** Triggers an event-backed Klaviyo flow containing transactional email content. */
+/**
+ * Triggers an event-backed Klaviyo flow containing transactional email content.
+ *
+ * The event is always created with `backfill: false`; all validation and
+ * asynchronous-acceptance semantics from {@link createEvent} apply.
+ */
 export async function triggerTransactionalEmail<
 	Events extends EventCatalog,
 	ProfileProperties extends JsonObject,
@@ -141,7 +180,12 @@ export async function triggerTransactionalEmail<
 	await createEvent(client, { ...input, backfill: false });
 }
 
-/** Queues an existing Klaviyo marketing campaign for asynchronous sending. */
+/**
+ * Queues an existing Klaviyo marketing campaign for asynchronous sending.
+ *
+ * @returns The campaign send-job resource returned by Klaviyo.
+ * @throws TypeError if `campaignId` is empty.
+ */
 export async function triggerMarketingEmail<
 	Events extends EventCatalog,
 	ProfileProperties extends JsonObject,
@@ -156,7 +200,13 @@ export async function triggerMarketingEmail<
 	return (await client.api(CampaignsApi).sendCampaign(query)).body.data;
 }
 
-/** Reads a profile by its Klaviyo-generated profile ID. */
+/**
+ * Reads a profile by its Klaviyo-generated profile ID.
+ *
+ * @remarks The client's profile-properties generic is a compile-time contract;
+ * the returned custom properties are not validated at runtime.
+ * @throws TypeError if `profileId` is empty.
+ */
 export async function readProfile<
 	Events extends EventCatalog,
 	ProfileProperties extends JsonObject,
@@ -170,7 +220,12 @@ export async function readProfile<
 	return profile as KlaviyoProfile<ProfileProperties>;
 }
 
-/** Reads one filtered and cursor-paginated page of account reviews. */
+/**
+ * Reads one filtered and cursor-paginated page of account reviews.
+ *
+ * @returns Klaviyo's compound collection document, including pagination links
+ * and any related resources returned by the API.
+ */
 export async function pullReviews<
 	Events extends EventCatalog,
 	ProfileProperties extends JsonObject,

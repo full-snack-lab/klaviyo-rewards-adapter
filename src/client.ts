@@ -26,7 +26,10 @@ export type OAuthCredentials = Readonly<{
 	clientSecret: string;
 }>;
 
-/** The token pair and expiration persisted for one Klaviyo account. */
+/**
+ * The token pair and absolute access-token expiration persisted for one
+ * Klaviyo account.
+ */
 export type OAuthTokens = Readonly<{
 	accessToken: string;
 	refreshToken: string;
@@ -36,20 +39,26 @@ export type OAuthTokens = Readonly<{
 /**
  * Persists OAuth token pairs for Klaviyo accounts.
  *
- * Implementations must save both tokens atomically. Implement `runExclusive` with
- * a distributed lock when more than one process can refresh the same account.
+ * @remarks Implementations must save each token pair atomically. Provide
+ * {@link TokenStore.runExclusive} with a distributed lock when multiple
+ * processes can refresh the same account; the client already deduplicates
+ * refreshes within one process.
  */
 export interface TokenStore {
 	/** Loads the latest token pair, or `null` when the account is not connected. */
 	load(accountId: string): Promise<OAuthTokens | null>;
 
-	/** Atomically replaces the account's access token and refresh token. */
+	/** Atomically replaces both tokens and their expiration for the account. */
 	save(accountId: string, tokens: OAuthTokens): Promise<void>;
 
-	/** Deletes stored credentials after successful revocation. */
+	/** Deletes stored credentials after Klaviyo confirms revocation. */
 	delete?(accountId: string): Promise<void>;
 
-	/** Serializes token refresh work for one account. */
+	/**
+	 * Runs a token refresh operation exclusively for one account.
+	 *
+	 * Implementations must release the lock whether `operation` resolves or rejects.
+	 */
 	runExclusive?<Value>(
 		accountId: string,
 		operation: () => Promise<Value>,
@@ -63,13 +72,23 @@ export type BeginAuthorizationInput = Readonly<{
 	scopes: readonly string[];
 }>;
 
-/** The redirect URL and verifier produced for a pending authorization. */
+/**
+ * The redirect URL and verifier produced for a pending authorization.
+ *
+ * Store `codeVerifier` server-side and associate it with the OAuth state until
+ * the callback is handled.
+ */
 export type PendingAuthorization = Readonly<{
 	authorizationUrl: string;
 	codeVerifier: string;
 }>;
 
-/** The authorized or denied result parsed from an OAuth callback. */
+/**
+ * The authorized or denied result parsed from an OAuth callback.
+ *
+ * Denied callbacks may omit `state`; callers must still validate it whenever
+ * the authorization server returns one.
+ */
 export type OAuthCallback =
 	| Readonly<{ status: "authorized"; code: string; state: string }>
 	| Readonly<{
@@ -99,8 +118,12 @@ export type KlaviyoApiConstructor<Api> = new (session: Session) => Api;
 /**
  * Handles OAuth and creates authenticated instances of the official Klaviyo SDK APIs.
  *
+ * @remarks The underlying SDK refreshes expiring tokens and retries supported
+ * transient failures. Refreshes are deduplicated within this client; cross-process
+ * serialization depends on {@link TokenStore.runExclusive}.
+ *
  * @typeParam Events - Event names and their required property shapes.
- * @typeParam ProfileProperties - Custom properties returned on profiles.
+ * @typeParam ProfileProperties - Custom properties expected on returned profiles.
  */
 export class KlaviyoClient<
 	Events extends EventCatalog = EventCatalog,
@@ -116,6 +139,11 @@ export class KlaviyoClient<
 	private readonly oauth: OAuthApi;
 	private readonly session: Session;
 
+	/**
+	 * Creates a client for one Klaviyo account.
+	 *
+	 * @throws TypeError if the account ID or either OAuth credential is empty.
+	 */
 	constructor(options: KlaviyoClientOptions) {
 		assertNonEmpty(options.accountId, "accountId");
 		assertNonEmpty(options.credentials.clientId, "clientId");
@@ -140,7 +168,12 @@ export class KlaviyoClient<
 	/**
 	 * Creates a new PKCE verifier and Klaviyo authorization URL.
 	 *
-	 * Store the verifier server-side before redirecting the user.
+	 * @remarks Store the verifier server-side before redirecting the user. This
+	 * method does not persist authorization state. Duplicate scopes are removed
+	 * while preserving their first-seen order.
+	 *
+	 * @throws TypeError if `state` or `redirectUri` is empty, or if no scopes are
+	 * provided.
 	 */
 	async beginAuthorization(
 		input: BeginAuthorizationInput,
@@ -160,7 +193,12 @@ export class KlaviyoClient<
 		};
 	}
 
-	/** Exchanges an authorization code and atomically saves the returned token pair. */
+	/**
+	 * Exchanges an authorization code and atomically saves the returned token pair.
+	 *
+	 * @returns The same token pair persisted through {@link TokenStore.save}.
+	 * @throws TypeError if the code, verifier, or redirect URI is empty.
+	 */
 	async completeAuthorization(
 		input: CompleteAuthorizationInput,
 	): Promise<OAuthTokens> {
@@ -175,7 +213,16 @@ export class KlaviyoClient<
 		);
 	}
 
-	/** Revokes the stored refresh token and deletes it when supported by the store. */
+	/**
+	 * Revokes the stored refresh token.
+	 *
+	 * @remarks After Klaviyo confirms revocation, the client calls
+	 * {@link TokenStore.delete} when implemented. Stored tokens are retained if
+	 * the revocation request fails.
+	 *
+	 * @throws TypeError if the store has no valid token pair for this account.
+	 * @throws Error if Klaviyo rejects the revocation request.
+	 */
 	async revoke(): Promise<void> {
 		const tokens = validTokens(await this.tokenStore.load(this.accountId));
 		const credentials = Buffer.from(
@@ -198,7 +245,12 @@ export class KlaviyoClient<
 		await this.tokenStore.delete?.(this.accountId);
 	}
 
-	/** Creates an authenticated official SDK API instance. */
+	/**
+	 * Creates an authenticated official SDK API instance.
+	 *
+	 * A new API object is created on every call and shares this client's OAuth
+	 * session, retry policy, and token store.
+	 */
 	api<Api>(ApiClass: KlaviyoApiConstructor<Api>): Api {
 		return new ApiClass(this.session);
 	}
@@ -207,7 +259,12 @@ export class KlaviyoClient<
 /**
  * Parses an OAuth redirect into an authorized or denied result.
  *
- * @throws {TypeError} When neither an OAuth error nor both `code` and `state` are present.
+ * @remarks String inputs must be absolute URLs. Pass `URLSearchParams` when only
+ * callback query parameters are available. An OAuth `error` takes precedence
+ * over any authorization code in the same callback.
+ *
+ * @throws TypeError if a string is not a valid absolute URL, or when neither an
+ * OAuth error nor both `code` and `state` are present.
  */
 export function parseOAuthCallback(
 	callback: string | URL | URLSearchParams,

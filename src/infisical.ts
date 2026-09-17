@@ -2,7 +2,9 @@ import { InfisicalSDK } from "@infisical/sdk";
 import type { OAuthCredentials } from "./client.ts";
 
 /**
- * Configures Universal Auth and typed secret aliases for Infisical.
+ * Configures Infisical Universal Auth and typed local secret aliases.
+ *
+ * `secretPath` defaults to `/`, and `siteUrl` defaults to Infisical Cloud.
  *
  * @typeParam Secrets - Maps local aliases to Infisical secret names.
  */
@@ -17,12 +19,24 @@ export type InfisicalSecretsOptions<
 	siteUrl?: string;
 }>;
 
-/** A type-safe function that retrieves a configured Infisical secret alias. */
+/**
+ * Retrieves the current value for a configured Infisical secret alias.
+ *
+ * Values are fetched on every call rather than cached.
+ */
 export type InfisicalSecretGetter<
 	Secrets extends Readonly<Record<string, string>>,
 > = <Name extends keyof Secrets & string>(name: Name) => Promise<string>;
 
-/** Authenticates with Infisical Universal Auth and creates a typed secret getter. */
+/**
+ * Authenticates with Infisical Universal Auth and creates a typed secret getter.
+ *
+ * @remarks Authentication happens once. Each call to the returned getter reads
+ * the named secret from Infisical using the configured project, environment,
+ * and path.
+ *
+ * @throws TypeError if a requested alias has no runtime mapping.
+ */
 export async function createInfisicalSecrets<
 	const Secrets extends Readonly<Record<string, string>>,
 >(
@@ -47,7 +61,12 @@ export async function createInfisicalSecrets<
 	};
 }
 
-/** Resolves Klaviyo OAuth credentials from two typed Infisical aliases. */
+/**
+ * Resolves Klaviyo OAuth credentials from two typed Infisical aliases.
+ *
+ * Both secrets are requested concurrently. Errors from either lookup are
+ * propagated to the caller.
+ */
 export async function oauthCredentialsFromInfisical<
 	Secrets extends Readonly<Record<string, string>>,
 >(

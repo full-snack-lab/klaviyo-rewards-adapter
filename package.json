@@ -1,5 +1,5 @@
 {
-  "name": "full-snack-klaviyo-rewards",
+  "name": "@fullsnacklab/klaviyo-rewards-adapter",
   "version": "0.1.0",
   "description": "Typed Klaviyo OAuth client with token storage and Infisical secrets",
   "license": "MIT",
@@ -17,11 +17,11 @@
     "@types/node": "^24.0.0",
     "bunup": "^0.16.32",
     "msw": "^2.15.0",
-    "typescript": "^7.0.2",
+    "typescript": "^6",
     "vitest": "^4.0.0"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "type": "module",
   "exports": {
