@@ -1,13 +1,13 @@
-# full-snack-klaviyo-rewards
+# @fullsnacklab/klaviyo-rewards-adapter
 
-Connect a Node.js TypeScript application to multiple Klaviyo accounts with OAuth. The package adds database-backed token persistence, typed events, and Infisical secrets to the official `klaviyo-api` SDK.
+Connect a Node.js TypeScript application to multiple Klaviyo accounts with OAuth. The package adds a token-storage contract, typed events, and Infisical secrets to the official `klaviyo-api` SDK.
 
-Requires Node.js 20 or later.
+Requires Node.js 22 or later. For consumer setup, private-key migration, and replacing Resend, see the [usage guide](./USAGE.md).
 
 ## Install
 
 ```sh
-npm install full-snack-klaviyo-rewards
+npm install @fullsnacklab/klaviyo-rewards-adapter
 ```
 
 ## Configure the client
@@ -16,12 +16,11 @@ Implement `TokenStore` with your database. Encrypt tokens at rest, save each tok
 
 ```ts
 import {
-  FEATURE_SCOPES,
   KlaviyoClient,
   createEvent,
   type OAuthTokens,
   type TokenStore,
-} from "full-snack-klaviyo-rewards";
+} from "@fullsnacklab/klaviyo-rewards-adapter";
 
 type Events = {
   "Reward Redeemed": { rewardId: string; points: number };
@@ -49,7 +48,7 @@ const client = new KlaviyoClient<Events, ProfileProperties>({
 const pending = await client.beginAuthorization({
   state: "an-unpredictable-session-bound-value",
   redirectUri: "https://app.example.com/oauth/klaviyo/callback",
-  scopes: FEATURE_SCOPES,
+  scopes: ["events:write"],
 });
 
 // Store pending.codeVerifier server-side before redirecting.
@@ -57,7 +56,7 @@ redirect(pending.authorizationUrl);
 
 await createEvent(client, {
   name: "Reward Redeemed",
-  profile: { identifier: "email", email: "customer@example.com" },
+  profile: { identifier: "email", email: "customer@yourdomain.com" },
   properties: { rewardId: "reward-42", points: 500 },
   uniqueId: "redemption-42",
 });
@@ -73,7 +72,7 @@ At the callback, validate that the returned `state` belongs to the current user.
 import {
   createInfisicalSecrets,
   oauthCredentialsFromInfisical,
-} from "full-snack-klaviyo-rewards";
+} from "@fullsnacklab/klaviyo-rewards-adapter";
 
 const getSecret = await createInfisicalSecrets({
   universalAuth: {
