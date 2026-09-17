@@ -159,7 +159,7 @@ afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
 describe("Klaviyo OAuth client", () => {
-	it("completes PKCE auth, rotates tokens, and sends typed events through the SDK", async () => {
+	it("creates a PKCE authorization request and persists exchanged tokens", async () => {
 		const pending = await client.beginAuthorization({
 			state: "merchant-1",
 			redirectUri: "https://app.example.com/oauth/callback",
@@ -175,6 +175,13 @@ describe("Klaviyo OAuth client", () => {
 			codeVerifier: pending.codeVerifier,
 			redirectUri: "https://app.example.com/oauth/callback",
 		});
+		expect(await tokenStore.load("merchant-1")).toMatchObject({
+			accessToken: "authorized-access",
+			refreshToken: "initial-refresh",
+		});
+	});
+
+	it("deduplicates token refresh while sending concurrent events", async () => {
 		await tokenStore.save("merchant-1", {
 			accessToken: "expired-access",
 			refreshToken: "initial-refresh",
@@ -184,9 +191,21 @@ describe("Klaviyo OAuth client", () => {
 		await Promise.all([
 			createEvent(client, {
 				name: "Order Shipped",
-				profile: { identifier: "email", email: "sam@example.com" },
+				profile: {
+					identifier: "email",
+					email: "sam@example.com",
+					firstName: "Sam",
+					lastName: "Taylor",
+					phoneNumber: "+15555550100",
+					externalId: "customer-1",
+					properties: { loyaltyTier: "gold" },
+				},
 				properties: { orderId: "order-1", carrier: "ups" },
+				time: new Date("2026-01-02T03:04:05.000Z"),
+				value: 25,
+				valueCurrency: "USD",
 				uniqueId: "shipment-order-1",
+				backfill: true,
 			}),
 			createEvent(client, {
 				name: "Order Shipped",
@@ -201,27 +220,80 @@ describe("Klaviyo OAuth client", () => {
 			accessToken: "refreshed-access",
 			refreshToken: "rotated-refresh",
 		});
-		const request = eventRequests.find(
-			({ body }) =>
-				(body as { data: { attributes: { unique_id?: string } } }).data.attributes
-					.unique_id === "shipment-order-1",
-		);
-		expect(request).toMatchObject({
+		expect(eventRequests).toHaveLength(2);
+		const requestFor = (uniqueId: string) =>
+			eventRequests.find(
+				({ body }) =>
+					(body as { data: { attributes: { unique_id?: string } } }).data.attributes
+						.unique_id === uniqueId,
+			);
+		expect(requestFor("shipment-order-1")).toEqual({
 			authorization: "Bearer refreshed-access",
 			revision: "2026-07-15",
 			body: {
 				data: {
 					type: "event",
 					attributes: {
-						unique_id: "shipment-order-1",
 						properties: { orderId: "order-1", carrier: "ups" },
+						time: "2026-01-02T03:04:05.000Z",
+						value: 25,
+						value_currency: "USD",
+						unique_id: "shipment-order-1",
+						backfill: true,
+						metric: {
+							data: {
+								type: "metric",
+								attributes: { name: "Order Shipped" },
+							},
+						},
+						profile: {
+							data: {
+								type: "profile",
+								attributes: {
+									email: "sam@example.com",
+									phone_number: "+15555550100",
+									external_id: "customer-1",
+									first_name: "Sam",
+									last_name: "Taylor",
+									properties: { loyaltyTier: "gold" },
+								},
+							},
+						},
 					},
 				},
 			},
 		});
+		expect(requestFor("shipment-order-2")).toEqual({
+			authorization: "Bearer refreshed-access",
+			revision: "2026-07-15",
+			body: {
+				data: {
+					type: "event",
+					attributes: {
+						properties: { orderId: "order-2", carrier: "fedex" },
+						unique_id: "shipment-order-2",
+						metric: {
+							data: {
+								type: "metric",
+								attributes: { name: "Order Shipped" },
+							},
+						},
+						profile: {
+							data: {
+								type: "profile",
+								id: "profile-1",
+								attributes: {},
+							},
+						},
+					},
+				},
+			},
+		});
+	});
 
+	it("deletes stored tokens after revocation", async () => {
 		await client.revoke();
-		expect(revokedToken).toBe("rotated-refresh");
+		expect(revokedToken).toBe("valid-refresh");
 		expect(await tokenStore.load("merchant-1")).toBeNull();
 	});
 

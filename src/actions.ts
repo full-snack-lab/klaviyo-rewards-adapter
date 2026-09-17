@@ -134,11 +134,17 @@ export async function createEvent<
 	client: KlaviyoClient<Events, ProfileProperties>,
 	input: EventInput<Name, Events[Name]>,
 ): Promise<void> {
+	await client.api(EventsApi).createEvent(buildEventQuery(input));
+}
+
+function buildEventQuery<Name extends string, Properties extends JsonObject>(
+	input: EventInput<Name, Properties>,
+): EventCreateQueryV2 {
 	assertNonEmpty(input.name, "event name");
 	if (input.name.length >= 128) {
 		throw new TypeError("event name must be less than 128 characters");
 	}
-	const query: EventCreateQueryV2 = {
+	return {
 		data: {
 			type: "event",
 			attributes: {
@@ -160,7 +166,6 @@ export async function createEvent<
 			},
 		},
 	};
-	await client.api(EventsApi).createEvent(query);
 }
 
 /**
