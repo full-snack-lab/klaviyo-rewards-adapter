@@ -24,6 +24,7 @@
   },
   "scripts": {
     "build": "bunup",
+    "prepack": "bun run build",
     "dev": "bunup --watch",
     "test": "vitest run",
     "type-check": "tsc --noEmit",
